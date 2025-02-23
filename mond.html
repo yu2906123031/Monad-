@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monad测试网</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #e6f3ff; /* 浅蓝色背景 */
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .header {
+            background-color: #f4a261; /* 黄色标题背景 */
+            color: black;
+            padding: 20px;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .button-item {
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .button-item.locked {
+            background-color: #d3d3d3; /* 锁定后的灰色背景 */
+            cursor: not-allowed;
+        }
+        .button-item.locked input[type="checkbox"] {
+            pointer-events: none; /* 禁用交互 */
+        }
+        .wallet-button {
+            background-color: #f4a261;
+            color: black;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+            width: 200px;
+        }
+        .description {
+            background-color: #ffffff;
+            border-radius: 5px;
+            padding: 15px;
+            max-width: 800px;
+            margin: 20px auto;
+            text-align: left;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">Monad测试网</div>
+    <div class="button-grid" id="buttonGrid"></div>
+    <button class="wallet-button">hiro钱包</button>
+    <div class="description">
+        备注：<br>
+        这是基于Monad测试网的内容页面，点击左侧菜单栏的链接跳转，包含多个功能区块，每个区块对应不同的测试功能。用户可以勾选感兴趣的区块，触发相应操作。更多详情请参考官网或联系支持。
+    </div>
+
+    <script>
+        // 按钮数据（名称、初始状态、锁定状态和对应地址）
+        const buttons = [
+            { name: "Nostr铭", checked: true, locked: false, url: "https://bebop.xyz/trade?network=monad&sell=MON&buy=WMON" },
+            { name: "chogstars mint NFT", checked: false, locked: false, url: "https://testnet.lilchogstars.com/chogstars" },
+            { name: "apr花瓣质押", checked: false, locked: false, url: "https://stake.apr.io/" },
+            { name: "Uni跳跳", checked: false, locked: false, url: "https://testnet.lilchogstars.com/uni" },
+            { name: "Alchemy的NFT", checked: false, locked: false, url: "https://testnet.lilchogstars.com/alchemy" },
+            { name: "nostra借贷", checked: false, locked: false, url: "https://monad.nostra.finance/" },
+            { name: "Fantasy-卡牌", checked: false, locked: false, url: "https://monad.fantasy.top/login" },
+            { name: "域名", checked: false, locked: false, url: "https://app.nad.domains/" },
+            { name: "owlto部署合约", checked: false, locked: false, url: "https://owlto.finance/deploy/" },
+            { name: "accurast游戏", checked: false, locked: false, url: "https://game.accountable.capital/" },
+            { name: "Curvance借贷", checked: false, locked: false, url: "https://app.curvance.com/" },
+            { name: "Owlto猫", checked: false, locked: false, url: "https://testnet.lilchogstars.com/owlto" },
+            { name: "accountable蛇", checked: false, locked: false, url: "https://testnet.lilchogstars.com/accountable" },
+            { name: "ambient交易", checked: false, locked: false, url: "https://monad.ambient.finance/" },
+            { name: "morkie的NFT", checked: false, locked: false, url: "https://morkie.xyz/monad" },
+            { name: "orbiter链", checked: false, locked: false, url: "https://testnet.orbiter.finance/en?src_chain=11155111&tgt_chain=10143&src_token=ETH" },
+            { name: "MEME交易", checked: false, locked: false, url: "https://testnet.nad.fun/" },
+            { name: "kunu岛链", checked: false, locked: false, url: "https://www.kuru.io/markets" },
+            { name: "Bebop鸟", checked: false, locked: false, url: "https://testnet.lilchogstars.com/bebop" },
+            { name: "MebNFT链", checked: false, locked: false, url: "https://magiceden.io/mint-terminal/monad-testnet/0x436ee7219bb099f71c9db9c7de8862a9bde891ae" }
+        ];
+
+        // 随机排列并渲染按钮
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function renderButtons() {
+            const grid = document.getElementById("buttonGrid");
+            grid.innerHTML = ""; // 清空现有内容
+            shuffleArray(buttons); // 随机排列
+            buttons.forEach(button => {
+                const div = document.createElement("div");
+                div.className = `button-item ${button.locked ? 'locked' : ''}`;
+                div.innerHTML = `
+                    ${button.name}
+                    <input type="checkbox" ${button.checked ? "checked" : ""} ${button.locked ? "disabled" : ""} onchange="toggleCheckbox(this, '${button.name}')">
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        // 勾选框切换逻辑（跳转并锁定）
+        function toggleCheckbox(checkbox, name) {
+            const button = buttons.find(b => b.name === name);
+            if (button.locked) return; // 如果已锁定，不执行任何操作
+
+            button.checked = checkbox.checked;
+            if (checkbox.checked) {
+                // 跳转到对应按钮的URL
+                window.location.href = button.url;
+                // 锁定按钮状态（防止重复跳转）
+                button.locked = true;
+                // 重新渲染以应用锁定样式
+                renderButtons();
+            }
+        }
+
+        // 页面加载时渲染按钮
+        window.onload = renderButtons;
+    </script>
+</body>
+</html>
