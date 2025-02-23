@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monad测试网</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #e6f3ff; /* 浅蓝色背景 */
+            font-family: Arial, sans-serif;
+            text-align: center;
+            transition: all 0.3s ease; /* 平滑过渡效果 */
+        }
+        .header {
+            background-color: #f4a261; /* 黄色标题背景 */
+            color: black;
+            padding: 20px;
+            font-size: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 增加阴影 */
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .button-item {
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background-color 0.3s ease; /* 锁定时的平滑过渡 */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* 轻微阴影 */
+        }
+        .button-item:hover:not(.locked) {
+            background-color: #f0f0f0; /* 悬停效果 */
+        }
+        .button-item.locked {
+            background-color: #d3d3d3; /* 锁定后的灰色背景 */
+            cursor: not-allowed;
+            opacity: 0.7; /* 降低透明度以增强视觉反馈 */
+        }
+        .button-item.locked input[type="checkbox"] {
+            pointer-events: none; /* 禁用交互 */
+        }
+        .wallet-button {
+            background-color: #f4a261;
+            color: black;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+            width: 200px;
+            transition: transform 0.3s ease; /* 按钮点击时的动画 */
+        }
+        .wallet-button:hover {
+            transform: scale(1.05); /* 悬停时轻微放大 */
+        }
+        .description {
+            background-color: #ffffff;
+            border-radius: 5px;
+            padding: 15px;
+            max-width: 800px;
+            margin: 20px auto;
+            text-align: left;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            line-height: 1.6; /* 行间距更舒适 */
+        }
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">Monad测试网</div>
+    <div class="button-grid" id="buttonGrid"></div>
+    <button class="wallet-button">hiro钱包</button>
+    <div class="description">
+        备注：<br>
+        这是基于 Monad 测试网的内容页面，点击左侧菜单栏的链接跳转，包含多个功能区块，每个区块对应不同的测试功能。用户可以勾选感兴趣的区块，触发相应操作。更多详情请参考官网或联系支持。
+    </div>
+    <div class="loading" id="loading">加载中...</div>
+
+    <script>
+        // 按钮数据（名称、初始状态、锁定状态和对应地址）
+        const buttons = [
+            { name: "Nostr铭", checked: false, locked: false, url: "https://bebop.xyz/trade?network=monad&sell=MON&buy=WMON" },
+            { name: "chogstars mint NFT", checked: false, locked: false, url: "https://testnet.lilchogstars.com/chogstars" },
+            { name: "apr花瓣质押", checked: false, locked: false, url: "https://stake.apr.io/" },
+            { name: "Uni跳跳", checked: false, locked: false, url: "https://testnet.lilchogstars.com/uni" },
+            { name: "Alchemy的NFT", checked: false, locked: false, url: "https://testnet.lilchogstars.com/alchemy" },
+            { name: "nostra借贷", checked: false, locked: false, url: "https://monad.nostra.finance/" },
+            { name: "Fantasy-卡牌", checked: false, locked: false, url: "https://monad.fantasy.top/login" },
+            { name: "域名", checked: false, locked: false, url: "https://app.nad.domains/" },
+            { name: "owlto部署合约", checked: false, locked: false, url: "https://owlto.finance/deploy/" },
+            { name: "accurast游戏", checked: false, locked: false, url: "https://game.accountable.capital/" },
+            { name: "Curvance借贷", checked: false, locked: false, url: "https://app.curvance.com/" },
+            { name: "Owlto猫", checked: false, locked: false, url: "https://testnet.lilchogstars.com/owlto" },
+            { name: "accountable蛇", checked: false, locked: false, url: "https://testnet.lilchogstars.com/accountable" },
+            { name: "ambient交易", checked: false, locked: false, url: "https://monad.ambient.finance/" },
+            { name: "morkie的NFT", checked: false, locked: false, url: "https://morkie.xyz/monad" },
+            { name: "orbiter链", checked: false, locked: false, url: "https://testnet.orbiter.finance/en?src_chain=11155111&tgt_chain=10143&src_token=ETH" },
+            { name: "MEME交易", checked: false, locked: false, url: "https://testnet.nad.fun/" },
+            { name: "kunu岛链", checked: false, locked: false, url: "https://www.kuru.io/markets" },
+            { name: "Bebop鸟", checked: false, locked: false, url: "https://testnet.lilchogstars.com/bebop" },
+            { name: "MebNFT链", checked: false, locked: false, url: "https://magiceden.io/mint-terminal/monad-testnet/0x436ee7219bb099f71c9db9c7de8862a9bde891ae" }
+        ];
+
+        // 工具函数：随机排列数组
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // 渲染按钮
+        function renderButtons() {
+            const grid = document.getElementById("buttonGrid");
+            const loading = document.getElementById("loading");
+            
+            // 显示加载提示
+            loading.style.display = "block";
+            
+            // 清空现有内容
+            grid.innerHTML = "";
+            
+            // 随机排列按钮
+            const shuffledButtons = shuffleArray([...buttons]); // 创建副本以避免修改原数组
+            
+            // 渲染每个按钮
+            shuffledButtons.forEach(button => {
+                const div = document.createElement("div");
+                div.className = `button-item ${button.locked ? 'locked' : ''}`;
+                div.innerHTML = `
+                    <span>${button.name}</span>
+                    <input type="checkbox" ${button.checked ? "checked" : ""} ${button.locked ? "disabled" : ""} onchange="toggleCheckbox(this, '${button.name}')">
+                `;
+                grid.appendChild(div);
+            });
+            
+            // 隐藏加载提示
+            loading.style.display = "none";
+        }
+
+        // 跳转并锁定按钮
+        function toggleCheckbox(checkbox, name) {
+            const button = buttons.find(b => b.name === name);
+            if (!button || button.locked) return; // 防止错误或重复操作
+
+            try {
+                button.checked = checkbox.checked;
+                if (button.checked) {
+                    // 在新窗口或标签页中打开链接
+                    const newWindow = window.open(button.url, '_blank');
+                    if (!newWindow || newWindow.closed) {
+                        alert("弹出窗口被阻止，请允许弹出窗口或手动打开链接：" + button.url);
+                        return;
+                    }
+                    // 锁定按钮状态
+                    button.locked = true;
+                    // 重新渲染以应用锁定样式
+                    renderButtons();
+                }
+            } catch (error) {
+                console.error(`跳转失败：${error.message}`);
+                alert("跳转发生错误，请检查网络或联系管理员。");
+            }
+        }
+
+        // 页面加载时渲染按钮
+        window.onload = () => {
+            renderButtons();
+            // 监听页面刷新以尝试恢复状态（可选）
+            window.onbeforeunload = () => {
+                localStorage.setItem('buttonStates', JSON.stringify(buttons));
+            };
+            // 恢复状态（如果需要持久化）
+            const savedStates = localStorage.getItem('buttonStates');
+            if (savedStates) {
+                const savedButtons = JSON.parse(savedStates);
+                savedButtons.forEach((savedButton, index) => {
+                    buttons[index].checked = savedButton.checked;
+                    buttons[index].locked = savedButton.locked;
+                });
+                renderButtons();
+            }
+        };
+    </script>
+</body>
+</html>
